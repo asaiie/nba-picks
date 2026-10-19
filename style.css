@@ -389,8 +389,11 @@ th.mine {
 .accuracy-table td {
   padding: 25px 5px;
 }
+.accuracy-table th:first-child,
 .accuracy-table td:first-child {
-  padding-left: 0;
+  padding-left: 14px;
+}
+.accuracy-table td:first-child {
   font-size: 15px;
 }
 .accuracy-table .record {
