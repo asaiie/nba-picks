@@ -1,4 +1,5 @@
-import { TEAMS, validPrediction, easternDay } from "../shared.js";
+import { canonicalAwardName } from "../award-directory.js";
+import { AWARDS, TEAMS, validPrediction, easternDay } from "../shared.js";
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
@@ -101,7 +102,11 @@ export async function onRequest({ request, env }) {
       if (!who.password) {
         if (body.setup !== true)
           return json(
-            { error: "Your password was reset. Confirm a new password to finish setup.", code: "SETUP_REQUIRED" },
+            {
+              error:
+                "Your password was reset. Confirm a new password to finish setup.",
+              code: "SETUP_REQUIRED",
+            },
             409,
           );
         const result = await query(
@@ -206,6 +211,16 @@ export async function onRequest({ request, env }) {
       return json({ ok: true });
     }
     if (path === "prediction") {
+      if (AWARDS.includes(body.category) && body.category !== "EOTY") {
+        const canonical =
+          typeof body.value === "string"
+            ? canonicalAwardName(body.category, body.value)
+            : null;
+        if (canonical === null)
+          return json({ error: "Choose a name from the award selector." }, 400);
+        body.value = canonical;
+      }
+
       if (!validPrediction(body.category, body.value))
         return json(
           {

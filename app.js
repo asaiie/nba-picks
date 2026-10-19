@@ -1,4 +1,9 @@
 import {
+  normalizeName,
+  canonicalAwardName,
+  searchAwardCandidates,
+} from "./award-directory.js";
+import {
   AWARDS,
   EAST,
   WEST,
@@ -63,9 +68,7 @@ async function api(path, body) {
   try {
     value = await response.json();
   } catch {
-    throw Error(
-      "The app is temporarily unavailable. Please try again.",
-    );
+    throw Error("The app is temporarily unavailable. Please try again.");
   }
   if (!response.ok) {
     const e = Error(value.error || "Request failed");
@@ -99,7 +102,7 @@ async function login() {
     app.innerHTML = `<main><p class="error">${esc(e.message)}</p></main>`;
     return;
   }
-  app.innerHTML = `<main class="login"><div class="brand">NBA Picks <span>2026–27 · Regular season</span></div><h1>Welcome to the season.</h1><p class="muted">Four friends. Every game. Make your call.</p><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form><p class="subtext">Private league · All game times in Eastern Time</p></main>`;
+  app.innerHTML = `<main class="login"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><h1>Sign in</h1><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form></main>`;
   const form = $("#login");
   function mode() {
     const fresh = !accounts.find((a) => a.id === Number(form.elements.id.value))
@@ -133,19 +136,23 @@ async function login() {
         setup,
       });
       accepted = true;
-      accounts.find(a => a.id === Number(form.elements.id.value)).registered = 1;
+      accounts.find((a) => a.id === Number(form.elements.id.value)).registered =
+        1;
       mode();
       await load();
     } catch (e) {
       if (e.code === "SETUP_REQUIRED") {
-        accounts.find(a => a.id === Number(form.elements.id.value)).registered = 0;
+        accounts.find(
+          (a) => a.id === Number(form.elements.id.value),
+        ).registered = 0;
         mode();
         form.elements.confirm.value = "";
         form.elements.confirm.focus();
       }
-      $("#login-error").textContent = accepted && e.status === 401
-        ? "Your password was accepted, but your browser did not keep you signed in. Open https://nba.amitsai.com in Safari or Chrome, allow cookies, and sign in with the password you just set. You do not need another reset."
-        : e.message;
+      $("#login-error").textContent =
+        accepted && e.status === 401
+          ? "Your password was accepted, but your browser did not keep you signed in. Open https://nba.amitsai.com in Safari or Chrome, allow cookies, and sign in with the password you just set. You do not need another reset."
+          : e.message;
       $("#login-submit").disabled = false;
     }
   };
@@ -153,6 +160,7 @@ async function login() {
 const route = () => location.hash.slice(1) || "games";
 function render() {
   if (!state) return;
+  closePersonPicker();
   const page = route(),
     tabs = [
       ["games", "Games"],
@@ -161,7 +169,7 @@ function render() {
       ["season", "Season"],
       ...(state.user.admin ? [["admin", "Admin"]] : []),
     ];
-  app.innerHTML = `<header><div class="bar"><div class="brand">NBA Picks<span>2026–27 · Regular season</span></div><div class="row"><span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button></div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
+  app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row"><span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button></div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
   $("#logout").onclick = async () => {
     try {
       await api("logout", {});
@@ -178,39 +186,38 @@ function render() {
 }
 function games() {
   const list = state.games.filter((g) => g.day === day),
-    now = Date.now() + offset,
-    remaining = list.filter(
-      (g) =>
-        canPick(g, now) &&
-        !state.picks.some(
-          (p) => p.user_id === state.user.id && p.game_id === g.id,
-        ),
-    ).length;
+    now = Date.now() + offset;
+  const remaining = list.filter(
+    (g) =>
+      canPick(g, now) &&
+      !state.picks.some(
+        (p) => p.user_id === state.user.id && p.game_id === g.id,
+      ),
+  ).length;
+  const dateLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(day + "T12:00:00Z"));
   $("#content").innerHTML =
-    `<div class="heading"><div><h1>Daily picks</h1><p class="muted">Everyone’s picks, side by side.</p></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div><section class="panel"><div class="paneltop"><h2>${new Intl.DateTimeFormat("en-US", { dateStyle: "full", timeZone: "UTC" }).format(new Date(day + "T12:00:00Z"))}</h2><span class="subtext">${remaining ? `${remaining} pick${remaining === 1 ? "" : "s"} left` : "All available picks made"} · Eastern Time</span></div>${
+    `<div class="heading"><div><div class="kicker">Daily picks</div><h1>${dateLabel}</h1></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div><div class="meta"><strong>${remaining} ${remaining === 1 ? "pick" : "picks"} left</strong></div><section class="panel">${
       list.length
-        ? `<table><thead><tr><th>Matchup</th>${state.users.map((u) => `<th class="${u.id === state.user.id ? "mine" : ""}">${u.name}${u.id === state.user.id ? " · You" : ""}</th>`).join("")}</tr></thead><tbody>${list
+        ? `<table class="games-table">${predHead("Matchup")}<tbody>${list
             .map(
               (g) =>
-                `<tr><td><div class="matchup"><div class="teamline">${logo(g.away)}${g.away}</div><div class="teamline">${logo(g.home)}${g.home}</div></div><div class="subtext">${g.status === "final" ? `Final · ${g.winner} won` : g.status !== "scheduled" ? esc(g.status) : `${clock(g.tipoff)}${canPick(g, now) ? "" : " · Locked"}`}</div></td>${state.users
+                `<tr><td><div class="matchup"><div class="teamline">${logo(g.away)}${g.away}</div><span class="at">at</span><div class="teamline">${logo(g.home)}${g.home}</div></div><div class="gametime">${g.status === "final" ? `Final · ${g.winner} won` : g.status !== "scheduled" ? esc(g.status) : `${clock(g.tipoff)} ET${canPick(g, now) ? "" : " · Locked"}`}</div></td>${state.users
                   .map((u) => {
                     const p = state.picks.find(
                       (p) => p.user_id === u.id && p.game_id === g.id,
                     );
-                    return `<td class="${u.id === state.user.id ? "mine" : ""}">${u.id === state.user.id && canPick(g, now) ? `<div class="pickbuttons">${[g.away, g.home].map((t) => `<button data-game="${esc(g.id)}" data-team="${t}" class="${p?.team === t ? "selected" : ""}" aria-label="Pick ${NAMES[t]}" aria-pressed="${p?.team === t}">${t}</button>`).join("")}</div>` : `<span class="pill ${g.status === "final" ? (p?.team === g.winner ? "good" : "bad") : "neutral"}">${p ? logo(p.team) : ""}${p?.team || (g.status === "final" ? "Miss" : "—")}${g.status === "final" ? (p?.team === g.winner ? " ✓" : " ×") : ""}</span>`}</td>`;
+                    return `<td class="${u.id === state.user.id ? "mine" : ""}">${u.id === state.user.id && canPick(g, now) ? `<div class="pickbuttons">${[g.away, g.home].map((t) => `<button data-game="${esc(g.id)}" data-team="${t}" class="${p?.team === t ? "selected" : ""}" aria-label="Pick ${NAMES[t]}" aria-pressed="${p?.team === t}">${t}</button>`).join("")}</div>` : `<span class="pill ${g.status === "final" ? (p?.team === g.winner ? "good" : "bad") : "neutral"}" ${g.status === "final" ? `aria-label="${p?.team || "Missed pick"}: ${p?.team === g.winner ? "correct" : "incorrect"}"` : ""}>${p?.team || "—"}${g.status === "final" ? (p?.team === g.winner ? " ✓" : " ×") : ""}</span>`}</td>`;
                   })
                   .join("")}</tr>`,
             )
             .join("")}</tbody></table>`
         : `<div class="empty">${state.games.length ? "No games scheduled for this day." : "The season schedule hasn’t been imported yet."}</div>`
-    }</section><div class="summary">${standings(state.users, list, state.picks)
-      .map(
-        (u) =>
-          `<span>${u.name} <strong>${u.correct}/${u.total}</strong></span>`,
-      )
-      .join(
-        "",
-      )}</div><p class="subtext">Picks save individually and lock at tip-off. Missed picks count as incorrect when a result is entered.</p>`;
+    }</section>`;
   $("#date").onchange = (e) => {
     if (e.target.value) {
       day = e.target.value;
@@ -265,19 +272,10 @@ async function mutate(path, data, message = "Saved") {
   }
 }
 function accuracy() {
+  const rows = standings(state.users, state.games, state.picks);
+  const finalized = state.games.filter((g) => g.status === "final").length;
   $("#content").innerHTML =
-    `<div class="heading"><div><h1>Season accuracy</h1><p class="muted">Every finalized regular-season game counts.</p></div></div><div class="panel"><table><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th><th>Games</th><th>Missed</th></tr></thead><tbody>${standings(
-      state.users,
-      state.games,
-      state.picks,
-    )
-      .map(
-        (u, i) =>
-          `<tr><td><span class="rank">${i + 1}</span><strong>${u.name}</strong></td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td>${u.correct}</td><td>${u.total}</td><td>${u.missed}</td></tr>`,
-      )
-      .join(
-        "",
-      )}</tbody></table></div><p class="subtext">Accuracy = correct picks ÷ finalized games. Missed picks are incorrect; postponed and canceled games are excluded. Equal accuracies are tied.</p>`;
+    `<div class="heading"><div><div class="kicker">Regular season</div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td><span class="rank">${u.total ? rows.findIndex((r) => r.correct === u.correct) + 1 : "—"}</span>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
 }
 function pred(user, category) {
   return state.predictions.find(
@@ -286,15 +284,136 @@ function pred(user, category) {
 }
 function predCell(u, category, teams, index) {
   const p = pred(u.id, category),
-    value = index === undefined ? p?.value : p?.value?.[index],
-    outcome = state.outcomes.find((o) => o.category === category),
+    value = index === undefined ? p?.value : p?.value?.[index];
+  const outcome = state.outcomes.find((o) => o.category === category),
     actual = index === undefined ? outcome?.value : outcome?.value?.[index];
-  return `<td class="${u.id === state.user.id ? "mine" : ""}">${u.id === state.user.id ? (teams ? `<select aria-label="${esc(category)} ${index === undefined ? "" : index + 1}" data-category="${category}" ${index === undefined ? "" : `data-index="${index}"`}>${options(teams, value)}</select>` : `<input aria-label="${esc(category)} prediction" data-category="${category}" value="${esc(value)}" placeholder="Enter name" maxlength="100">`) : `<span class="${actual && value ? "pill " + (value === actual ? "good" : "bad") : ""}">${esc(value || "—")}${actual && value ? (value === actual ? " ✓" : " ×") : ""}</span>`}${p ? `<span class="stamp">${stamp(p.updated)}</span>` : ""}</td>`;
+  const match =
+    actual && value && normalizeName(value) === normalizeName(actual);
+  const updated = p ? ` title="Updated ${stamp(p.updated)} ET"` : "";
+  let content;
+  if (u.id === state.user.id) {
+    if (teams) {
+      const available = teams.filter(
+        (t) =>
+          !["east", "west"].includes(category) ||
+          t === value ||
+          !(p?.value || []).includes(t),
+      );
+      content = `<div class="team-select">${value ? logo(value) : ""}<select aria-label="${esc(category)} ${index === undefined ? "" : index + 1}" data-category="${category}" ${index === undefined ? "" : `data-index="${index}"`}${updated}><option value="">—</option>${available.map((t) => `<option value="${t}" ${t === value ? "selected" : ""}>${t}</option>`).join("")}</select></div>`;
+    } else if (category === "EOTY")
+      content = `<input aria-label="Executive of the Year prediction" data-category="EOTY" value="${esc(value)}" placeholder="Name" maxlength="100"${updated}>`;
+    else
+      content = `<button class="award-choice ${value ? "" : "empty-choice"}" data-award="${category}" aria-label="Choose ${category}: ${esc(value || "no selection")}" aria-haspopup="dialog" aria-expanded="false"${updated}><span>${esc(value || "Select")}</span><span class="chevron" aria-hidden="true">⌄</span></button>`;
+  } else
+    content = `<span class="${teams ? "team-value" : "person-value"} ${actual && value ? (match ? "good" : "bad") : ""}"${updated}>${teams && value ? logo(value) : ""}<span>${esc(value || "—")}${actual && value ? (match ? " ✓" : " ×") : ""}</span></span>`;
+  return `<td class="${u.id === state.user.id ? "mine" : ""}">${content}</td>`;
 }
 function predHead(label) {
-  return `<thead><tr><th>${label}</th>${state.users.map((u) => `<th class="${u.id === state.user.id ? "mine" : ""}">${u.name}${u.id === state.user.id ? " · You" : ""}</th>`).join("")}</tr></thead>`;
+  return `<thead><tr><th>${label}</th>${state.users.map((u) => `<th class="${u.id === state.user.id ? "mine" : ""}">${u.name}${u.id === state.user.id ? '<span class="you">YOU</span>' : ""}</th>`).join("")}</tr></thead>`;
+}
+let closePersonPicker = () => {};
+function openPersonPicker(button) {
+  closePersonPicker();
+  const category = button.dataset.award;
+  const popup = document.createElement("div");
+  popup.className = "person-picker";
+  popup.setAttribute("role", "dialog");
+  popup.setAttribute("aria-label", `Choose ${category}`);
+  popup.innerHTML = `<div class="picker-top"><span>${category}</span><button class="picker-close" aria-label="Close selector">×</button></div><input type="search" aria-label="Search ${category === "COTY" ? "coaches" : "players"}" placeholder="Search ${category === "COTY" ? "coaches" : "players"}…" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="award-results" autocomplete="off"><div id="award-results" class="picker-results" role="listbox" aria-label="Suggestions"></div><button class="picker-clear">Clear selection</button>`;
+  document.body.append(popup);
+  button.setAttribute("aria-expanded", "true");
+  const input = popup.querySelector("input"),
+    results = popup.querySelector(".picker-results");
+  let matches = [],
+    active = -1;
+  const rect = button.getBoundingClientRect();
+  const width = Math.min(360, innerWidth - 24);
+  popup.style.width = width + "px";
+  popup.style.left =
+    Math.max(12, Math.min(rect.left, innerWidth - width - 12)) + "px";
+  const availableBelow = innerHeight - rect.bottom - 12;
+  if (availableBelow >= 250) popup.style.top = rect.bottom + 5 + "px";
+  else popup.style.top = Math.max(12, rect.top - 360) + "px";
+  popup.style.maxHeight = innerHeight - 24 + "px";
+  popup.style.overflowY = "auto";
+  function highlight() {
+    results
+      .querySelectorAll("[role=option]")
+      .forEach((el, i) =>
+        el.setAttribute("aria-selected", String(i === active)),
+      );
+    if (active >= 0) {
+      input.setAttribute("aria-activedescendant", `candidate-${active}`);
+      results.children[active]?.scrollIntoView({ block: "nearest" });
+    } else input.removeAttribute("aria-activedescendant");
+  }
+  function choose(value) {
+    closePersonPicker();
+    mutate("prediction", { category, value });
+  }
+  function suggestions() {
+    matches = searchAwardCandidates(category, input.value);
+    active = -1;
+    results.innerHTML = matches.length
+      ? matches
+          .map(
+            (p, i) =>
+              `<button type="button" role="option" id="candidate-${i}" aria-selected="false" class="person-option">${esc(p.name)}<span>${esc(p.team)}</span></button>`,
+          )
+          .join("")
+      : '<div class="picker-empty">No matching names</div>';
+    results
+      .querySelectorAll("button")
+      .forEach((b, i) => (b.onclick = () => choose(matches[i].name)));
+    highlight();
+  }
+  const outside = (e) => {
+    if (!popup.contains(e.target) && !button.contains(e.target))
+      closePersonPicker();
+  };
+  closePersonPicker = () => {
+    popup.remove();
+    button.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", outside);
+    closePersonPicker = () => {};
+  };
+  document.addEventListener("pointerdown", outside);
+  popup.querySelector(".picker-close").onclick = () => {
+    closePersonPicker();
+    button.focus();
+  };
+  popup.querySelector(".picker-clear").onclick = () => choose("");
+  input.oninput = suggestions;
+  input.onkeydown = (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      active = matches.length
+        ? (active + (e.key === "ArrowDown" ? 1 : -1) + matches.length) %
+          matches.length
+        : -1;
+      highlight();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (matches[active]) choose(matches[active].name);
+      else {
+        const name = canonicalAwardName(category, input.value);
+        if (name) choose(name);
+      }
+    }
+  };
+  popup.onkeydown = (e) => {
+    if (e.key === "Escape") {
+      closePersonPicker();
+      button.focus();
+    }
+  };
+  suggestions();
+  input.focus();
 }
 function wirePredictions() {
+  document
+    .querySelectorAll("[data-award]")
+    .forEach((b) => (b.onclick = () => openPersonPicker(b)));
   document.querySelectorAll("[data-category]").forEach(
     (input) =>
       (input.onchange = () => {
@@ -306,9 +425,7 @@ function wirePredictions() {
           ];
           value[Number(input.dataset.index)] = input.value;
           if (!value.every((v, i) => !v || value.indexOf(v) === i)) {
-            notice(
-              "Each team can appear only once per conference. Clear its other slot first.",
-            );
+            notice("Each team can appear only once per conference.");
             render();
             return;
           }
@@ -319,22 +436,22 @@ function wirePredictions() {
 }
 function awards() {
   $("#content").innerHTML =
-    `<div class="intro"><h1>Awards</h1><p class="muted">Your season-long calls. Editable anytime, on trust.</p><p class="subtext">Enter the player, coach, or executive’s full name. Changes save when you leave a field.</p><p class="subtext tablehint">Swipe across to compare everyone’s predictions.</p></div><div class="panel tablewrap"><table class="prediction-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></div>`;
+    `<div class="intro"><div class="kicker">Season predictions</div><h1>Awards</h1></div><section class="panel"><table class="prediction-table awards-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></section>`;
   wirePredictions();
 }
 function season() {
   $("#content").innerHTML =
-    `<div class="intro"><h1>Season predictions</h1><p class="muted">Regular-season finishes and playoff champions. Editable anytime.</p><p class="subtext tablehint">Swipe across to compare everyone’s predictions.</p></div>${[
+    `<div class="intro"><div class="kicker">Season predictions</div><h1>Standings & titles</h1></div>${[
       ["east", "Eastern Conference", EAST],
       ["west", "Western Conference", WEST],
     ]
       .map(
         ([key, title, teams]) =>
-          `<section class="panel"><div class="paneltop"><h2>${title}</h2><span class="subtext">Regular-season positions · Before the play-in</span></div><div class="tablewrap"><table class="prediction-table">${predHead("Seed")}<tbody>${Array.from({ length: 10 }, (_, i) => `<tr><td><strong>${i + 1}</strong>${state.outcomes.find((o) => o.category === key)?.value?.[i] ? `<span class="outcome">Actual: ${state.outcomes.find((o) => o.category === key).value[i]}</span>` : ""}</td>${state.users.map((u) => predCell(u, key, teams, i)).join("")}</tr>`).join("")}</tbody></table></div></section>`,
+          `<section class="panel"><div class="paneltop"><h2>${title}</h2></div><table class="prediction-table standings-table">${predHead("Seed")}<tbody>${Array.from({ length: 10 }, (_, i) => `<tr><td class="numbers">${String(i + 1).padStart(2, "0")}${state.outcomes.find((o) => o.category === key)?.value?.[i] ? `<span class="outcome">Actual: ${state.outcomes.find((o) => o.category === key).value[i]}</span>` : ""}</td>${state.users.map((u) => predCell(u, key, teams, i)).join("")}</tr>`).join("")}</tbody></table></section>`,
       )
       .join(
         "",
-      )}<section class="panel"><div class="paneltop"><h2>Champions</h2><span class="subtext">Playoff winners</span></div><div class="tablewrap"><table class="prediction-table">${predHead("Title")}<tbody>${[
+      )}<section class="panel"><div class="paneltop"><h2>Champions</h2></div><table class="prediction-table standings-table">${predHead("Title")}<tbody>${[
       ["east_champ", "East", EAST],
       ["west_champ", "West", WEST],
       ["champ", "NBA", TEAMS],
@@ -343,9 +460,7 @@ function season() {
         ([key, title, teams]) =>
           `<tr><td>${title}${state.outcomes.find((o) => o.category === key)?.value ? `<span class="outcome">Winner: ${state.outcomes.find((o) => o.category === key).value}</span>` : ""}</td>${state.users.map((u) => predCell(u, key, teams)).join("")}</tr>`,
       )
-      .join(
-        "",
-      )}</tbody></table></div></section><p class="subtext">A playoff bracket will be added after the regular season. These predictions do not affect game accuracy.</p>`;
+      .join("")}</tbody></table></section>`;
   wirePredictions();
 }
 function easternInput(ms) {
