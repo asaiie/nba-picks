@@ -204,7 +204,7 @@ function games() {
     timeZone: "UTC",
   }).format(new Date(day + "T12:00:00Z"));
   $("#content").innerHTML =
-    `<div class="heading"><div><div class="kicker">Daily picks</div><h1>${dateLabel}</h1></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div><div class="meta"><strong>${remaining} ${remaining === 1 ? "pick" : "picks"} left</strong></div><section class="panel">${
+    `<div class="heading"><div><h1>${dateLabel}</h1></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div><div class="meta"><strong>${remaining} ${remaining === 1 ? "pick" : "picks"} left</strong></div><section class="panel">${
       list.length
         ? `<table class="games-table">${predHead("Matchup")}<tbody>${list
             .map(
@@ -278,7 +278,7 @@ function accuracy() {
   const rows = standings(state.users, state.games, state.picks);
   const finalized = state.games.filter((g) => g.status === "final").length;
   $("#content").innerHTML =
-    `<div class="heading"><div><div class="kicker">Regular season</div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
+    `<div class="heading"><div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
 }
 function pred(user, category) {
   return state.predictions.find(
@@ -445,12 +445,12 @@ function bracket() {
 }
 function awards() {
   $("#content").innerHTML =
-    `<div class="intro"><div class="kicker">Season predictions</div><h1>Awards</h1>${deadlineCaption()}</div><section class="panel"><table class="prediction-table awards-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></section>`;
+    `<div class="intro"><h1>Awards</h1>${deadlineCaption()}</div><section class="panel"><table class="prediction-table awards-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></section>`;
   wirePredictions();
 }
 function season() {
   $("#content").innerHTML =
-    `<div class="intro"><div class="kicker">Season predictions</div><h1>Standings & titles</h1>${deadlineCaption()}</div>${[
+    `<div class="intro"><h1>Standings & titles</h1>${deadlineCaption()}</div>${[
       ["east", "Eastern Conference", EAST],
       ["west", "Western Conference", WEST],
     ]
