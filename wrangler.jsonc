@@ -1,0 +1,28 @@
+{
+  "name": "nba-picks",
+  "compatibility_date": "2026-10-19",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nba-picks",
+      "database_id": "9bab38c1-dade-4abd-b380-328f9a296e6f"
+    }
+  ],
+  "main": "worker.js",
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "build": {
+    "command": "npm run build"
+  },
+  "routes": [
+    {
+      "pattern": "nba.amitsai.com",
+      "custom_domain": true
+    }
+  ]
+}
