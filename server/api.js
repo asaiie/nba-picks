@@ -1,5 +1,5 @@
 import { canonicalAwardName } from "../award-directory.js";
-import { AWARDS, TEAMS, validPrediction, easternDay } from "../shared.js";
+import { seasonPredictionsLocked, AWARDS, TEAMS, validPrediction, easternDay } from "../shared.js";
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
@@ -211,6 +211,8 @@ export async function onRequest({ request, env }) {
       return json({ ok: true });
     }
     if (path === "prediction") {
+      if (seasonPredictionsLocked(now))
+        return json({ error: "Season predictions locked on December 25 at 11:59 PM Eastern." }, 409);
       if (AWARDS.includes(body.category) && body.category !== "EOTY") {
         const canonical =
           typeof body.value === "string"

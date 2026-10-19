@@ -1,3 +1,6 @@
+// December 25, 2026 at 11:59 PM Eastern (EST).
+export const SEASON_DEADLINE = Date.parse("2026-12-25T23:59:00-05:00");
+export const seasonPredictionsLocked = (now = Date.now()) => now >= SEASON_DEADLINE;
 export const PEOPLE = ["Amit", "Amol", "Garv", "Praneeth"];
 export const AWARDS = [
   "MVP",

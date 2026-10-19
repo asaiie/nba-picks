@@ -787,3 +787,12 @@ th.mine {
       color 0.12s;
   }
 }
+
+.bracket-locked {
+  padding: 64px 16px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  color: var(--muted);
+}
+.bracket-locked h2 { color: var(--ink); margin: 16px 0 8px; }
+.bracket-locked p { margin: 0; }

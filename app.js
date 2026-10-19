@@ -4,6 +4,7 @@ import {
   searchAwardCandidates,
 } from "./award-directory.js";
 import {
+  seasonPredictionsLocked,
   AWARDS,
   EAST,
   WEST,
@@ -167,6 +168,7 @@ function render() {
       ["accuracy", "Accuracy"],
       ["awards", "Awards"],
       ["season", "Season"],
+      ["bracket", "Bracket"],
       ...(state.user.admin ? [["admin", "Admin"]] : []),
     ];
   app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row"><span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button></div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
@@ -181,6 +183,7 @@ function render() {
   if (page === "accuracy") accuracy();
   else if (page === "awards") awards();
   else if (page === "season") season();
+  else if (page === "bracket") bracket();
   else if (page === "admin" && state.user.admin) admin();
   else games();
 }
@@ -291,7 +294,7 @@ function predCell(u, category, teams, index) {
     actual && value && normalizeName(value) === normalizeName(actual);
   const updated = p ? ` title="Updated ${stamp(p.updated)} ET"` : "";
   let content;
-  if (u.id === state.user.id) {
+  if (u.id === state.user.id && !seasonPredictionsLocked(Date.now() + offset)) {
     if (teams) {
       const available = teams.filter(
         (t) =>
@@ -434,14 +437,20 @@ function wirePredictions() {
       }),
   );
 }
+function deadlineCaption() {
+  return `<p class="subtext">${seasonPredictionsLocked(Date.now() + offset) ? "Locked · Dec 25, 2026 at 11:59 PM ET" : "Picks lock Dec 25, 2026 at 11:59 PM ET"}</p>`;
+}
+function bracket() {
+  $("#content").innerHTML = `<div class="intro"><h1>Bracket</h1></div><section class="bracket-locked"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg><h2>Locked</h2><p>Will open once the regular season is completed.</p></section>`;
+}
 function awards() {
   $("#content").innerHTML =
-    `<div class="intro"><div class="kicker">Season predictions</div><h1>Awards</h1></div><section class="panel"><table class="prediction-table awards-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></section>`;
+    `<div class="intro"><div class="kicker">Season predictions</div><h1>Awards</h1>${deadlineCaption()}</div><section class="panel"><table class="prediction-table awards-table">${predHead("Award")}<tbody>${AWARDS.map((a) => `<tr><td><strong>${a}</strong>${state.outcomes.find((o) => o.category === a)?.value ? `<span class="outcome">Winner: ${esc(state.outcomes.find((o) => o.category === a).value)}</span>` : ""}</td>${state.users.map((u) => predCell(u, a)).join("")}</tr>`).join("")}</tbody></table></section>`;
   wirePredictions();
 }
 function season() {
   $("#content").innerHTML =
-    `<div class="intro"><div class="kicker">Season predictions</div><h1>Standings & titles</h1></div>${[
+    `<div class="intro"><div class="kicker">Season predictions</div><h1>Standings & titles</h1>${deadlineCaption()}</div>${[
       ["east", "Eastern Conference", EAST],
       ["west", "Western Conference", WEST],
     ]
@@ -553,7 +562,7 @@ setInterval(async () => {
     !state ||
     busy ||
     document.hidden ||
-    !["games", "accuracy"].includes(route())
+    !["games", "accuracy", "awards", "season"].includes(route())
   )
     return;
   const active = document.activeElement;
