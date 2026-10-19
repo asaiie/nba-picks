@@ -64,12 +64,13 @@ async function api(path, body) {
     value = await response.json();
   } catch {
     throw Error(
-      "The API is unavailable. Check your Pages Functions deployment.",
+      "The app is temporarily unavailable. Please try again.",
     );
   }
   if (!response.ok) {
     const e = Error(value.error || "Request failed");
     e.status = response.status;
+    e.code = value.code;
     throw e;
   }
   return value;
@@ -124,15 +125,27 @@ async function login() {
       return;
     }
     $("#login-submit").disabled = true;
+    let accepted = false;
     try {
       await api("login", {
         id: Number(form.elements.id.value),
         password: form.elements.password.value,
         setup,
       });
+      accepted = true;
+      accounts.find(a => a.id === Number(form.elements.id.value)).registered = 1;
+      mode();
       await load();
     } catch (e) {
-      $("#login-error").textContent = e.message;
+      if (e.code === "SETUP_REQUIRED") {
+        accounts.find(a => a.id === Number(form.elements.id.value)).registered = 0;
+        mode();
+        form.elements.confirm.value = "";
+        form.elements.confirm.focus();
+      }
+      $("#login-error").textContent = accepted && e.status === 401
+        ? "Your password was accepted, but your browser did not keep you signed in. Open https://nba.amitsai.com in Safari or Chrome, allow cookies, and sign in with the password you just set. You do not need another reset."
+        : e.message;
       $("#login-submit").disabled = false;
     }
   };

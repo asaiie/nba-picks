@@ -101,7 +101,7 @@ export async function onRequest({ request, env }) {
       if (!who.password) {
         if (body.setup !== true)
           return json(
-            { error: "This account needs a password. Refresh and try again." },
+            { error: "Your password was reset. Confirm a new password to finish setup.", code: "SETUP_REQUIRED" },
             409,
           );
         const result = await query(
@@ -285,6 +285,7 @@ export async function onRequest({ request, env }) {
       await db.batch([
         query("UPDATE users SET password=NULL WHERE id=?", id),
         query("DELETE FROM sessions WHERE user_id=?", id),
+        query("DELETE FROM attempts WHERE key LIKE ?", `login:%:${id}`),
       ]);
       return json({ ok: true });
     }

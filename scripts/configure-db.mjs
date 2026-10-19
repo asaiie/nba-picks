@@ -14,7 +14,7 @@ await writeFile(
     {
       name: "nba-picks",
       main: "worker.js",
-      assets: { directory: "public", binding: "ASSETS", run_worker_first: ["/api/*"] },
+      assets: { directory: "public", binding: "ASSETS", run_worker_first: true },
       build: {command: "npm run build"},
       routes: [{pattern: "nba.amitsai.com", custom_domain: true}],
       compatibility_date: "2026-10-19",
