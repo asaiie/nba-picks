@@ -1,6 +1,6 @@
 @import url("/fonts/fonts.css");
 :root {
-  --paper: #f7f6f2;
+  --paper: #f5f3ed;
   --ink: #20211f;
   --muted: #676a62;
   --line: #ddded5;
@@ -20,6 +20,9 @@
 }
 body {
   margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
 }
 button,
 input,
@@ -383,12 +386,6 @@ th.mine {
   font-size: 28px;
   letter-spacing: -1px;
 }
-.rank {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  color: var(--muted);
-  margin-right: 17px;
-}
 .accuracy-table td {
   padding: 25px 5px;
 }
@@ -697,9 +694,6 @@ th.mine {
   .accuracy-table td:first-child {
     font-size: 14px;
   }
-  .rank {
-    margin-right: 8px;
-  }
   .stat {
     font-size: 23px;
   }
@@ -736,7 +730,24 @@ th.mine {
     display: none;
   }
   .prediction-table input {
+    font-size: 12px;
+    min-height: 44px;
+    text-overflow: ellipsis;
+  }
+  .prediction-table input:focus {
     font-size: 16px;
+  }
+  .prediction-table input::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+  .award-choice > span:first-child,
+  .person-value {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .paneltop {
     margin-top: 32px;

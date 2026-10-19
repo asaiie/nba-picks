@@ -275,7 +275,7 @@ function accuracy() {
   const rows = standings(state.users, state.games, state.picks);
   const finalized = state.games.filter((g) => g.status === "final").length;
   $("#content").innerHTML =
-    `<div class="heading"><div><div class="kicker">Regular season</div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td><span class="rank">${u.total ? rows.findIndex((r) => r.correct === u.correct) + 1 : "—"}</span>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
+    `<div class="heading"><div><div class="kicker">Regular season</div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
 }
 function pred(user, category) {
   return state.predictions.find(
