@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, password TEXT, admin INTEGER NOT NULL DEFAULT 0);
-INSERT OR IGNORE INTO users(id,name,admin) VALUES(1,'Amit',1),(2,'Amol',0),(3,'Garv',0),(4,'Praneeth',0);
+INSERT OR IGNORE INTO users(id,name,admin) VALUES(1,'Amit',1),(2,'Amol',0),(3,'Garv',0),(4,'Praneeth',0),(5,'Daniel',0);
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id),expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS games(id TEXT PRIMARY KEY,season TEXT NOT NULL DEFAULT '2026-27',home TEXT NOT NULL,away TEXT NOT NULL,tipoff INTEGER NOT NULL,day TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled','postponed','canceled','final')),winner TEXT,CHECK(home<>away),CHECK(winner IS NULL OR winner=home OR winner=away),CHECK((status='final' AND winner IS NOT NULL) OR (status<>'final' AND winner IS NULL)));

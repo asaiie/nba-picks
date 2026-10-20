@@ -796,3 +796,10 @@ th.mine {
 }
 .bracket-locked h2 { color: var(--ink); margin: 16px 0 8px; }
 .bracket-locked p { margin: 0; }
+
+/* Keep five participant columns readable on narrow screens. */
+.panel:has(> .games-table),
+.panel:has(> .prediction-table) {
+  overflow-x: auto;
+}
+.games-table, .prediction-table { min-width: 440px; }

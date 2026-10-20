@@ -81,7 +81,7 @@ export async function onRequest({ request, env }) {
         "SELECT * FROM users WHERE id=?",
         Number(body.id) || 0,
       ).first();
-      if (!who) return json({ error: "Choose one of the four accounts." }, 400);
+      if (!who) return json({ error: "Choose an account from the list." }, 400);
       const key = `login:${request.headers.get("CF-Connecting-IP") || "local"}:${who.id}`;
       await query(
         "INSERT INTO attempts(key,count,expires) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN expires<? THEN 1 ELSE count+1 END,expires=CASE WHEN expires<? THEN excluded.expires ELSE expires END",
@@ -297,7 +297,7 @@ export async function onRequest({ request, env }) {
     }
     if (path === "admin/reset") {
       const id = Number(body.id);
-      if (![2, 3, 4].includes(id))
+      if (![2, 3, 4, 5].includes(id))
         return json({ error: "Only friend accounts can be reset here." }, 400);
       await db.batch([
         query("UPDATE users SET password=NULL WHERE id=?", id),
