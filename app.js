@@ -104,7 +104,7 @@ async function login() {
     app.innerHTML = `<main><p class="error">${esc(e.message)}</p></main>`;
     return;
   }
-  app.innerHTML = `<main class="login"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><h1>Sign in</h1><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form><p><a id="back-viewing" href="#${returnPage}">Back to viewing</a></p></main>`;
+  app.innerHTML = `<main class="login"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><h1>Sign in</h1><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form><p><a class="linkbutton" id="back-viewing" href="#${returnPage}">Back to viewing</a></p></main>`;
   const form = $("#login");
   function mode() {
     const fresh = !accounts.find((a) => a.id === Number(form.elements.id.value))
@@ -176,7 +176,7 @@ function render() {
       ["bracket", "Bracket"],
       ...(state.user?.admin ? [["admin", "Admin"]] : []),
     ];
-  app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row">${state.user ? `<span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button>` : `<span class="small muted">View only</span><a class="small" id="signin" href="#login">Sign in</a>`}</div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
+  app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row">${state.user ? `<span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button>` : `<span class="small muted">View only</span><a class="linkbutton small" id="signin" href="#login">Sign in</a>`}</div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
   $("#signin")?.addEventListener("click", () => { returnPage = route(); });
   if ($("#logout")) $("#logout").onclick = async () => {
     try {

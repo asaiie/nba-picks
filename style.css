@@ -546,11 +546,20 @@ th.mine {
   min-width: 0;
 }
 .linkbutton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 2px;
   border: 0;
   background: transparent;
   color: var(--muted);
   padding: 6px;
   min-height: 36px;
+}
+.linkbutton:hover,
+.linkbutton:focus-visible {
+  background: #eae9e2;
 }
 .small {
   font-size: 12px;
