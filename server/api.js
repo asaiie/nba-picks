@@ -212,7 +212,7 @@ export async function onRequest({ request, env }) {
     }
     if (path === "prediction") {
       if (seasonPredictionsLocked(now))
-        return json({ error: "Season predictions locked on December 25 at 11:59 PM Eastern." }, 409);
+        return json({ error: "Season predictions locked on October 21 at 7:00 PM Eastern." }, 409);
       if (AWARDS.includes(body.category) && body.category !== "EOTY") {
         const canonical =
           typeof body.value === "string"

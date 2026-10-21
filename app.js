@@ -438,7 +438,7 @@ function wirePredictions() {
   );
 }
 function deadlineCaption() {
-  return `<p class="subtext">${seasonPredictionsLocked(Date.now() + offset) ? "Locked · Dec 25, 2026 at 11:59 PM ET" : "Picks lock Dec 25, 2026 at 11:59 PM ET"}</p>`;
+  return `<p class="subtext">${seasonPredictionsLocked(Date.now() + offset) ? "Locked · Oct 21, 2026 at 7:00 PM ET" : "Picks lock Oct 21, 2026 at 7:00 PM ET"}</p>`;
 }
 function bracket() {
   $("#content").innerHTML = `<div class="intro"><h1>Bracket</h1></div><section class="bracket-locked"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg><h2>Locked</h2><p>Will open once the regular season is completed.</p></section>`;

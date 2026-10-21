@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { SEASON_DEADLINE, seasonPredictionsLocked } from "../shared.js";
 
-test("season picks lock at December 25 11:59 PM Eastern", () => {
-  assert.equal(new Date(SEASON_DEADLINE).toISOString(), "2026-12-26T04:59:00.000Z");
+test("season picks lock at October 21 7:00 PM Eastern", () => {
+  assert.equal(new Date(SEASON_DEADLINE).toISOString(), "2026-10-21T23:00:00.000Z");
   assert.equal(seasonPredictionsLocked(SEASON_DEADLINE - 1), false);
   assert.equal(seasonPredictionsLocked(SEASON_DEADLINE), true);
   assert.equal(seasonPredictionsLocked(SEASON_DEADLINE + 1), true);
