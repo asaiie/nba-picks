@@ -16,7 +16,7 @@ async function call(path, body, cookie, origin = base) {
     cookie: r.headers.get("set-cookie")?.split(";")[0],
   };
 }
-assert.equal((await call("state")).status, 401);
+assert.equal((await call("state")).status, 200);
 const a = await call("login", {
   id: 1,
   password: "LocalTestOnly!123",
@@ -109,7 +109,7 @@ assert.equal(
   200,
 );
 assert.equal((await call("admin/reset", { id: 2 }, a.cookie)).status, 200);
-assert.equal((await call("state", undefined, b.cookie)).status, 401);
+assert.equal((await call("state", undefined, b.cookie)).status, 200);
 assert.equal(
   (
     await call(
@@ -157,7 +157,7 @@ assert.equal(
 await call("admin/reset", { id: 2 }, a.cookie);
 
 assert.equal((await call("logout", {}, a.cookie)).status, 200);
-assert.equal((await call("state", undefined, a.cookie)).status, 401);
+assert.equal((await call("state", undefined, a.cookie)).status, 200);
 console.log(
   "API checks passed: auth, CSRF, own-pick permissions, locks, admin permissions, validation, reset, logout. Local fixtures remain; run cleanup SQL.",
 );

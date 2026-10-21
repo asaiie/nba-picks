@@ -94,8 +94,9 @@ async function start() {
     $("#retry")?.addEventListener("click", start);
   }
 }
+let returnPage = "games";
 async function login() {
-  state = null;
+  closePersonPicker();
   let accounts;
   try {
     accounts = await api("accounts");
@@ -103,7 +104,7 @@ async function login() {
     app.innerHTML = `<main><p class="error">${esc(e.message)}</p></main>`;
     return;
   }
-  app.innerHTML = `<main class="login"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><h1>Sign in</h1><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form></main>`;
+  app.innerHTML = `<main class="login"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><h1>Sign in</h1><form id="login"><label>Your name<select name="id">${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join("")}</select></label><label>Password<input name="password" type="password" minlength="8" maxlength="128" required autocomplete="current-password"></label><label id="confirm-label" hidden>Confirm password<input name="confirm" type="password" minlength="8" autocomplete="new-password"></label><p id="login-help" class="subtext"></p><p class="error" id="login-error" role="alert"></p><button class="primary" id="login-submit">Sign in</button></form><p><a id="back-viewing" href="#${returnPage}">Back to viewing</a></p></main>`;
   const form = $("#login");
   function mode() {
     const fresh = !accounts.find((a) => a.id === Number(form.elements.id.value))
@@ -140,7 +141,10 @@ async function login() {
       accounts.find((a) => a.id === Number(form.elements.id.value)).registered =
         1;
       mode();
-      await load();
+      await load(false);
+      if (!state.user) throw Object.assign(Error("Please sign in."), { status: 401 });
+      history.replaceState(null, "", "#" + returnPage);
+      render();
     } catch (e) {
       if (e.code === "SETUP_REQUIRED") {
         accounts.find(
@@ -162,6 +166,7 @@ const route = () => location.hash.slice(1) || "games";
 function render() {
   if (!state) return;
   closePersonPicker();
+  if (route() === "login") { login(); return; }
   const page = route(),
     tabs = [
       ["games", "Games"],
@@ -169,13 +174,15 @@ function render() {
       ["awards", "Awards"],
       ["season", "Season"],
       ["bracket", "Bracket"],
-      ...(state.user.admin ? [["admin", "Admin"]] : []),
+      ...(state.user?.admin ? [["admin", "Admin"]] : []),
     ];
-  app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row"><span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button></div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
-  $("#logout").onclick = async () => {
+  app.innerHTML = `<header><div class="bar"><div class="brand">NBA<span class="slash">/</span>PICKS<span class="season-label">2026–27 · REGULAR SEASON</span></div><div class="row">${state.user ? `<span class="small">${state.user.name}</span><button class="linkbutton small" id="logout">Sign out</button>` : `<span class="small muted">View only</span><a class="small" id="signin" href="#login">Sign in</a>`}</div></div><nav>${tabs.map(([id, name]) => `<a href="#${id}" class="${page === id ? "active" : ""}" ${page === id ? 'aria-current="page"' : ""}>${name}</a>`).join("")}</nav></header><main id="content"></main>`;
+  $("#signin")?.addEventListener("click", () => { returnPage = route(); });
+  if ($("#logout")) $("#logout").onclick = async () => {
     try {
       await api("logout", {});
-      await login();
+      if (route() === "admin") history.replaceState(null, "", "#games");
+      await load();
     } catch (e) {
       notice(e.message);
     }
@@ -184,7 +191,7 @@ function render() {
   else if (page === "awards") awards();
   else if (page === "season") season();
   else if (page === "bracket") bracket();
-  else if (page === "admin" && state.user.admin) admin();
+  else if (page === "admin" && state.user?.admin) admin();
   else games();
 }
 function games() {
@@ -194,7 +201,7 @@ function games() {
     (g) =>
       canPick(g, now) &&
       !state.picks.some(
-        (p) => p.user_id === state.user.id && p.game_id === g.id,
+        (p) => p.user_id === state.user?.id && p.game_id === g.id,
       ),
   ).length;
   const dateLabel = new Intl.DateTimeFormat("en-US", {
@@ -204,7 +211,7 @@ function games() {
     timeZone: "UTC",
   }).format(new Date(day + "T12:00:00Z"));
   $("#content").innerHTML =
-    `<div class="heading"><div><h1>${dateLabel}</h1></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div><div class="meta"><strong>${remaining} ${remaining === 1 ? "pick" : "picks"} left</strong></div><section class="panel">${
+    `<div class="heading"><div><h1>${dateLabel}</h1></div><div class="toolbar"><button id="prev" aria-label="Previous day">←</button><input type="date" id="date" aria-label="Game date" value="${day}"><button id="next" aria-label="Next day">→</button><button id="today">Today</button></div></div>${state.user ? `<div class="meta"><strong>${remaining} ${remaining === 1 ? "pick" : "picks"} left</strong></div>` : ""}<section class="panel">${
       list.length
         ? `<table class="games-table">${predHead("Matchup")}<tbody>${list
             .map(
@@ -214,7 +221,7 @@ function games() {
                     const p = state.picks.find(
                       (p) => p.user_id === u.id && p.game_id === g.id,
                     );
-                    return `<td class="${u.id === state.user.id ? "mine" : ""}">${u.id === state.user.id && canPick(g, now) ? `<div class="pickbuttons">${[g.away, g.home].map((t) => `<button data-game="${esc(g.id)}" data-team="${t}" class="${p?.team === t ? "selected" : ""}" aria-label="Pick ${NAMES[t]}" aria-pressed="${p?.team === t}">${t}</button>`).join("")}</div>` : `<span class="pill ${g.status === "final" ? (p?.team === g.winner ? "good" : "bad") : "neutral"}" ${g.status === "final" ? `aria-label="${p?.team || "Missed pick"}: ${p?.team === g.winner ? "correct" : "incorrect"}"` : ""}>${p?.team || "—"}${g.status === "final" ? (p?.team === g.winner ? " ✓" : " ×") : ""}</span>`}</td>`;
+                    return `<td class="${u.id === state.user?.id ? "mine" : ""}">${u.id === state.user?.id && canPick(g, now) ? `<div class="pickbuttons">${[g.away, g.home].map((t) => `<button data-game="${esc(g.id)}" data-team="${t}" class="${p?.team === t ? "selected" : ""}" aria-label="Pick ${NAMES[t]}" aria-pressed="${p?.team === t}">${t}</button>`).join("")}</div>` : `<span class="pill ${g.status === "final" ? (p?.team === g.winner ? "good" : "bad") : "neutral"}" ${g.status === "final" ? `aria-label="${p?.team || "Missed pick"}: ${p?.team === g.winner ? "correct" : "incorrect"}"` : ""}>${p?.team || "—"}${g.status === "final" ? (p?.team === g.winner ? " ✓" : " ×") : ""}</span>`}</td>`;
                   })
                   .join("")}</tr>`,
             )
@@ -278,7 +285,7 @@ function accuracy() {
   const rows = standings(state.users, state.games, state.picks);
   const finalized = state.games.filter((g) => g.status === "final").length;
   $("#content").innerHTML =
-    `<div class="heading"><div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user.id ? "mine" : ""}"><td>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
+    `<div class="heading"><div><h1>Accuracy</h1></div></div><div class="meta left">${finalized} / 1230 games finalized</div><section class="panel"><table class="accuracy-table"><thead><tr><th>Player</th><th>Accuracy</th><th>Correct</th></tr></thead><tbody>${rows.map((u) => `<tr class="${u.id === state.user?.id ? "mine" : ""}"><td>${u.name}</td><td><span class="stat">${u.accuracy === null ? "—" : (u.accuracy * 100).toFixed(1) + "%"}</span></td><td class="record">${u.correct}<span class="muted"> / ${u.total}</span></td></tr>`).join("")}</tbody></table></section>`;
 }
 function pred(user, category) {
   return state.predictions.find(
@@ -294,7 +301,7 @@ function predCell(u, category, teams, index) {
     actual && value && normalizeName(value) === normalizeName(actual);
   const updated = p ? ` title="Updated ${stamp(p.updated)} ET"` : "";
   let content;
-  if (u.id === state.user.id && !seasonPredictionsLocked(Date.now() + offset)) {
+  if (u.id === state.user?.id && !seasonPredictionsLocked(Date.now() + offset)) {
     if (teams) {
       const available = teams.filter(
         (t) =>
@@ -309,10 +316,10 @@ function predCell(u, category, teams, index) {
       content = `<button class="award-choice ${value ? "" : "empty-choice"}" data-award="${category}" aria-label="Choose ${category}: ${esc(value || "no selection")}" aria-haspopup="dialog" aria-expanded="false"${updated}><span>${esc(value || "Select")}</span><span class="chevron" aria-hidden="true">⌄</span></button>`;
   } else
     content = `<span class="${teams ? "team-value" : "person-value"} ${actual && value ? (match ? "good" : "bad") : ""}"${updated}>${teams && value ? logo(value) : ""}<span>${esc(value || "—")}${actual && value ? (match ? " ✓" : " ×") : ""}</span></span>`;
-  return `<td class="${u.id === state.user.id ? "mine" : ""}">${content}</td>`;
+  return `<td class="${u.id === state.user?.id ? "mine" : ""}">${content}</td>`;
 }
 function predHead(label) {
-  return `<thead><tr><th>${label}</th>${state.users.map((u) => `<th class="${u.id === state.user.id ? "mine" : ""}">${u.name}${u.id === state.user.id ? '<span class="you">YOU</span>' : ""}</th>`).join("")}</tr></thead>`;
+  return `<thead><tr><th>${label}</th>${state.users.map((u) => `<th class="${u.id === state.user?.id ? "mine" : ""}">${u.name}${u.id === state.user?.id ? '<span class="you">YOU</span>' : ""}</th>`).join("")}</tr></thead>`;
 }
 let closePersonPicker = () => {};
 function openPersonPicker(button) {
@@ -423,7 +430,7 @@ function wirePredictions() {
         let value = input.value.trim();
         if (input.dataset.index !== undefined) {
           value = [
-            ...(pred(state.user.id, input.dataset.category)?.value ||
+            ...(pred(state.user?.id, input.dataset.category)?.value ||
               Array(10).fill("")),
           ];
           value[Number(input.dataset.index)] = input.value;

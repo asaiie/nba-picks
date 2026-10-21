@@ -151,7 +151,8 @@ export async function onRequest({ request, env }) {
           now,
         ).first()
       : null;
-    if (!user) return json({ error: "Please sign in." }, 401);
+    if (!user && !(path === "state" && request.method === "GET"))
+      return json({ error: "Please sign in." }, 401);
     if (path === "logout" && request.method === "POST") {
       await query(
         "DELETE FROM sessions WHERE token=?",
