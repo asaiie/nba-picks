@@ -8,6 +8,7 @@
       "database_id": "9bab38c1-dade-4abd-b380-328f9a296e6f"
     }
   ],
+  "triggers": { "crons": ["*/30 * * * *"] },
   "main": "worker.js",
   "assets": {
     "directory": "public",

@@ -1,5 +1,7 @@
+import { runSync } from './server/results.js';
 import { onRequest } from './server/api.js';
 export default {
+  async scheduled(controller, env, ctx) { ctx.waitUntil(runSync(env)); },
   async fetch(request, env) {
     const url = new URL(request.url);
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);

@@ -14,7 +14,7 @@ test('guests can read public league data without private account fields', async 
 });
 test('guests cannot write picks, predictions, results or reset accounts', async () => {
   const env = { DB: { prepare() { throw Error('Guest must not reach database writes'); } } };
-  for (const path of ['pick', 'prediction', 'admin/game', 'admin/outcome', 'admin/reset', 'logout']) {
+  for (const path of ['pick', 'prediction', 'admin/game', 'admin/outcome', 'admin/reset', 'admin/sync', 'admin/auto-result', 'logout']) {
     const response = await onRequest({ env, request: new Request('https://nba.amitsai.com/api/' + path, {
       method: 'POST', headers: { Origin: 'https://nba.amitsai.com', 'Content-Type': 'application/json' }, body: '{}'
     }) });

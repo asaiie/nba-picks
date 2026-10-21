@@ -68,3 +68,13 @@ The importer validates counts, duplicate game IDs, duplicate matchups, team code
 ## Interface
 
 Daily picks fit all four players on a phone. Longer awards/season comparison tables scroll horizontally. Player awards use a searchable, server-validated directory of canonical names; COTY searches coaches, and EOTY accepts executive names. Team predictions use conference-filtered selectors with logos. Refresh the directory with `node scripts/update-award-candidates.mjs` (ESPN NBA team rosters). Existing predictions remain stored unchanged. The interface uses self-hosted IBM Plex Sans and Mono under the included SIL Open Font License. Admin can add games, change times/status/results, enter award/season outcomes, and reset friends' passwords. A playoff bracket is intentionally deferred until the regular season ends.
+
+### Automatic results
+
+The Worker runs at minute 0 and 30 of every hour. It reads ESPN's public NBA scoreboard, validates regular-season finals, and updates only existing, unambiguously matched games. It never modifies picks or the schedule. Today and yesterday are checked each run; older dates in the seven-day correction window rotate through runs. One older unresolved date is checked per run when due (at most once per day per date). Updates are capped at 20 games per run; remaining results are retried.
+
+Apply `migrations/0004_result_sync.sql` **once** to each existing or newly initialized database before deploying this version (use `--local --config wrangler.local.jsonc` for local development; `--remote` for production). Existing final results are marked manual/protected. Run history is retained 30 days and result-change history 90 days.
+
+Admin provides Preview sync, Sync results now, the latest report, and Allow automatic updates for protected games. Saving a game manually protects it; release protection explicitly when appropriate. Feed outages or unknown games appear in the report and do not erase results. The public ESPN endpoint is not a contracted service; if its format/access changes, manual results remain available. Schedule imports and Cup-dependent additions remain manual.
+
+Tests use Python 3's built-in SQLite alongside Node to exercise the actual SQL and audit trigger without touching production.

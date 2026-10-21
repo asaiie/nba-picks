@@ -1,3 +1,4 @@
+import { runSync, syncStatus } from './results.js';
 import { canonicalAwardName } from "../award-directory.js";
 import { seasonPredictionsLocked, AWARDS, TEAMS, validPrediction, easternDay } from "../shared.js";
 const json = (data, status = 200) =>
@@ -177,6 +178,7 @@ export async function onRequest({ request, env }) {
       );
       return json({
         user,
+        ...(user?.admin ? { sync: await syncStatus(db) } : {}),
         users: users.results,
         games: games.results,
         picks: picks.results,
@@ -242,6 +244,11 @@ export async function onRequest({ request, env }) {
       return json({ ok: true });
     }
     if (!user.admin) return json({ error: "Admin access required." }, 403);
+    if (path === "admin/sync") return json(await runSync(env, { dryRun: body.dryRun === true }));
+    if (path === "admin/auto-result") {
+      await query('UPDATE games SET manual_result=0 WHERE id=?',body.id).run();
+      return json({ok:true});
+    }
     if (path === "admin/game") {
       const { id, home, away, status, winner } = body,
         tipoff = Number(body.tipoff);
@@ -275,7 +282,7 @@ export async function onRequest({ request, env }) {
           400,
         );
       await query(
-        "INSERT INTO games(id,home,away,tipoff,day,status,winner) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET tipoff=excluded.tipoff,day=excluded.day,status=excluded.status,winner=excluded.winner",
+        "INSERT INTO games(id,home,away,tipoff,day,status,winner,manual_result,result_source) VALUES(?,?,?,?,?,?,?,1,'manual') ON CONFLICT(id) DO UPDATE SET tipoff=excluded.tipoff,day=excluded.day,status=excluded.status,winner=excluded.winner,manual_result=1,result_source='manual',home_score=NULL,away_score=NULL,result_updated=NULL",
         id,
         home,
         away,

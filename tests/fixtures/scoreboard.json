@@ -1,0 +1,139 @@
+{
+  "events": [
+    {
+      "id": "401909088",
+      "date": "2026-10-20T19:00Z",
+      "season": {
+        "year": 2027,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "status": {
+        "clock": 0,
+        "displayClock": "0.0",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "abbreviation": "DET"
+              },
+              "score": "121",
+              "winner": true
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "abbreviation": "BOS"
+              },
+              "score": "113",
+              "winner": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401909089",
+      "date": "2026-10-20T23:00Z",
+      "season": {
+        "year": 2027,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "status": {
+        "clock": 720,
+        "displayClock": "12:00",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "abbreviation": "NY"
+              },
+              "score": "100",
+              "winner": false
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "abbreviation": "PHI"
+              },
+              "score": "106",
+              "winner": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401909090",
+      "date": "2026-10-21T01:50Z",
+      "season": {
+        "year": 2027,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "status": {
+        "clock": 0,
+        "displayClock": "0.0",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "homeAway": "home",
+              "team": {
+                "abbreviation": "SA"
+              },
+              "score": "104",
+              "winner": false
+            },
+            {
+              "homeAway": "away",
+              "team": {
+                "abbreviation": "OKC"
+              },
+              "score": "116",
+              "winner": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
